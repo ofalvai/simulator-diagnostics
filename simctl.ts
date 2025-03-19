@@ -177,12 +177,11 @@ export async function measureBootTime(deviceId: string): Promise<number> {
   }
 
   const endTime = performance.now();
+  console.log(`Boot time: ${Math.round((endTime - startTime) / 1000)}s`);
   return endTime - startTime;
 }
 
 export async function shutdownDevice(deviceId: string): Promise<void> {
-  console.log(`Shutting down simulator with ID: ${deviceId}...`);
-
   const command = new Deno.Command("xcrun", {
     args: ["simctl", "shutdown", deviceId],
   });
