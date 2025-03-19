@@ -71,4 +71,8 @@ function printUsage(): void {
   console.error(
     '  deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14"',
   );
+  console.error("\nDiagnostic Information:");
+  console.error("  • Shows CoreSimulator framework version");
+  console.error("  • Lists available iOS simulator runtimes");
+  console.error("  • Provides detailed boot time benchmarks for specified devices and iOS versions");
 }
