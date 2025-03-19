@@ -8,12 +8,13 @@ import { styles } from "./styles.ts";
  */
 export async function benchmarkBootCommand(
   iosVersions: string[],
-  deviceNames: string[]
+  deviceNames: string[],
+  runCount: number = 1
 ): Promise<void> {
   if (iosVersions.length === 0 || deviceNames.length === 0) {
     console.error("Please provide both --ios and --device flags");
     console.error(
-      'Example: deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14"'
+      'Example: deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14" --runs 3'
     );
     Deno.exit(1);
   }
@@ -26,7 +27,9 @@ export async function benchmarkBootCommand(
   await getAllRuntimes();
 
   console.log(
-    `\nStarting benchmarks for %c${iosVersions.length}%c iOS version(s) and %c${deviceNames.length}%c device(s)...`,
+    `\nStarting benchmarks for %c${iosVersions.length}%c iOS version(s) and %c${deviceNames.length}%c device(s) with %c${runCount}%c run(s)...`,
+    styles.timingValue,
+    styles.reset,
     styles.timingValue,
     styles.reset,
     styles.timingValue,
@@ -38,7 +41,7 @@ export async function benchmarkBootCommand(
   // Run benchmark for each combination of iOS version and device
   for (const iosVersion of iosVersions) {
     for (const deviceName of deviceNames) {
-      const result = await runBootBenchmark(iosVersion, deviceName);
+      const result = await runBootBenchmark(iosVersion, deviceName, runCount);
       if (result) {
         results.push(result);
       }

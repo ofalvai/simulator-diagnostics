@@ -16,6 +16,7 @@ export function printBenchmarkSummary(
 
   console.log(`\n============================================`);
   console.log(`%cSUMMARY OF ALL BENCHMARKS`, styles.header);
+  console.log(`%c(Average across ${results[0]?.runs || 1} runs)`, styles.deviceName);
   console.log(`============================================`);
 
   // For a single device, just print the results by iOS version

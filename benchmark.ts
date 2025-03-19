@@ -12,6 +12,7 @@ export interface BenchmarkResult {
   coldBootTimeMs: number;
   warmBootTimeMs: number;
   differenceMs: number;
+  runs: number;
 }
 
 /**
@@ -20,7 +21,8 @@ export interface BenchmarkResult {
  */
 export async function runBootBenchmark(
   iosVersion: string,
-  deviceName: string
+  deviceName: string,
+  runCount: number = 1
 ): Promise<BenchmarkResult | null> {
   try {
     console.log(`\n========================================`);
@@ -32,29 +34,43 @@ export async function runBootBenchmark(
     console.log(`========================================`);
 
     const deviceId = await getDeviceId(iosVersion, deviceName);
+    
+    let totalColdBootTimeMs = 0;
+    let totalWarmBootTimeMs = 0;
+    
+    for (let i = 0; i < runCount; i++) {
+      console.log(`\n--- Run ${i + 1} of ${runCount} ---`);
+      
+      // COLD BOOT: Erase device to ensure a cold boot
+      console.log(`\n--- Cold Boot Test ---`);
+      await eraseDevice(deviceId);
 
-    // COLD BOOT: Erase device to ensure a cold boot
-    console.log(`\n--- Cold Boot Test ---`);
-    await eraseDevice(deviceId);
+      const coldBootTime = await measureBootTime(deviceId);
+      totalColdBootTimeMs += coldBootTime;
 
-    const coldBootTimeMs = await measureBootTime(deviceId);
+      // Shut down the simulator after measurement
+      await shutdownDevice(deviceId);
 
-    // Shut down the simulator after measurement
-    await shutdownDevice(deviceId);
+      // WARM BOOT: Boot again without erasing for warm boot measurement
+      console.log(`\n--- Warm Boot Test ---`);
+      const warmBootTime = await measureBootTime(deviceId);
+      totalWarmBootTimeMs += warmBootTime;
 
-    // WARM BOOT: Boot again without erasing for warm boot measurement
-    console.log(`\n--- Warm Boot Test ---`);
-    const warmBootTimeMs = await measureBootTime(deviceId);
-
-    // Shut down the simulator after measurement
-    await shutdownDevice(deviceId);
+      // Shut down the simulator after measurement
+      await shutdownDevice(deviceId);
+    }
+    
+    // Calculate average times
+    const avgColdBootTimeMs = totalColdBootTimeMs / runCount;
+    const avgWarmBootTimeMs = totalWarmBootTimeMs / runCount;
 
     return {
       iosVersion,
       deviceName,
-      coldBootTimeMs,
-      warmBootTimeMs,
-      differenceMs: coldBootTimeMs - warmBootTimeMs,
+      coldBootTimeMs: avgColdBootTimeMs,
+      warmBootTimeMs: avgWarmBootTimeMs,
+      differenceMs: avgColdBootTimeMs - avgWarmBootTimeMs,
+      runs: runCount,
     };
   } catch (error: any) {
     console.error(

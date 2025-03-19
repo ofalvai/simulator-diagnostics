@@ -19,7 +19,7 @@ if (import.meta.main) {
 async function main() {
   const { _: subcommands, ...flags } = parseArgs(Deno.args, {
     collect: ["ios", "device"], // Allow multiple iOS versions and devices
-    string: ["ios", "device"], // Treat flags as strings
+    string: ["ios", "device", "runs"], // Treat flags as strings
   });
 
   const command = subcommands[0];
@@ -32,15 +32,18 @@ async function main() {
   // Process commands
   switch (command) {
     case "benchmark-boot": {
-      const { ios, device } = flags;
+      const { ios, device, runs } = flags;
 
       // Convert to arrays, handling both single and multiple values
       const iosVersions = ios ? (Array.isArray(ios) ? ios : [ios]) : [];
       const deviceNames = device
         ? (Array.isArray(device) ? device : [device])
         : [];
+      
+      // Default to 1 run if not specified
+      const runCount = typeof runs === 'string' ? parseInt(runs) : 1;
 
-      await benchmarkBootCommand(iosVersions, deviceNames);
+      await benchmarkBootCommand(iosVersions, deviceNames, runCount);
       break;
     }
     default: {
@@ -67,9 +70,12 @@ function printUsage(): void {
   console.error(
     "  --device <name>   Device name to benchmark (can be used multiple times)",
   );
+  console.error(
+    "  --runs <name>     Number of times to repeat benchmarks (default: 1)",
+  );
   console.error("\nExample:");
   console.error(
-    '  deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14"',
+    '  deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14" --runs 3',
   );
   console.error("\nDiagnostic Information:");
   console.error("  • Shows CoreSimulator framework version");
