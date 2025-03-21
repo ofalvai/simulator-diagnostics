@@ -194,18 +194,33 @@ export async function measureBootTime(deviceId: string): Promise<number> {
 
   const startTime = performance.now();
 
-  const command = new Deno.Command("xcrun", {
+  // First boot the simulator
+  const bootCommand = new Deno.Command("xcrun", {
     args: ["simctl", "bootstatus", deviceId, "-b"],
   });
 
-  const { code } = await command.output();
+  const { code: bootCode } = await bootCommand.output();
 
-  if (code !== 0) {
+  if (bootCode !== 0) {
     throw new Error(`Failed to boot simulator with ID: ${deviceId}`);
+  }
+  
+  console.log(`Basic boot completed. Launching Settings app to verify full usability...`);
+  
+  // Then launch an app to ensure the simulator is fully usable
+  const launchCommand = new Deno.Command("xcrun", {
+    args: ["simctl", "launch", "booted", "com.apple.Preferences"],
+  });
+  
+  const { code: launchCode } = await launchCommand.output();
+  
+  if (launchCode !== 0) {
+    throw new Error(`Failed to launch Settings app on booted simulator`);
   }
 
   const endTime = performance.now();
-  console.log(`Boot time: ${Math.round((endTime - startTime) / 1000)}s`);
+  const totalTime = Math.round((endTime - startTime) / 1000);
+  console.log(`Full boot + app launch time: ${totalTime}s`);
   return endTime - startTime;
 }
 
