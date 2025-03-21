@@ -3,7 +3,8 @@ import { BenchmarkResult } from "./benchmark.ts";
 
 /**
  * Prints a formatted summary of benchmark results
- * Groups results by iOS version first, then by device if multiple devices
+ * Groups results by device with iOS versions as rows in a table
+ * Uses console.table() for a cleaner tabular display
  */
 export function printBenchmarkSummary(
   results: BenchmarkResult[],
@@ -19,81 +20,49 @@ export function printBenchmarkSummary(
   console.log(`%c(Average across ${results[0]?.runs || 1} runs)`, styles.deviceName);
   console.log(`============================================`);
 
-  // For a single device, just print the results by iOS version
+  // If we only have one device, just pass the results directly
   if (deviceNames.length === 1) {
-    printSingleDeviceSummary(results);
+    printResultTable(results);
   } else {
-    // For multiple devices, group by iOS version first, then by device
-    printMultiDeviceSummary(results);
-  }
-}
-
-/**
- * Prints a summary for a single device across multiple iOS versions
- */
-function printSingleDeviceSummary(results: BenchmarkResult[]): void {
-  const iosGroups = groupResultsByIosVersion(results);
-
-  // Print summary by iOS version
-  for (const [iosVersion, iosResults] of iosGroups.entries()) {
-    console.log(`\niOS %c${iosVersion}%c:`, styles.iosVersion, styles.reset);
-
-    // We only have one device, so just print its results
-    const result = iosResults[0]; // Only one device per iOS version
-    console.log(
-      `  Boot + App Launch: Cold: %c${Math.round(result.coldBootTimeMs / 1000)}%cs, Warm: %c${
-        Math.round(result.warmBootTimeMs / 1000)
-      }%cs`,
-      styles.timingValue,
-      styles.reset,
-      styles.timingValue,
-      styles.reset
-    );
-    
-    // Only display the time to idle for cold boots if available
-    if (result.timeToIdleMs) {
-      console.log(
-        `  Time to idle system (cold boot): %c${Math.round(result.timeToIdleMs / 1000)}%cs`,
-        styles.timingValue,
-        styles.reset
-      );
+    // For multiple devices, group by device and show a table for each
+    const deviceGroups = groupResultsByDevice(results);
+    for (const [deviceName, deviceResults] of deviceGroups) {
+      console.log(`\n%cDevice: ${deviceName}`, styles.deviceName);
+      printResultTable(deviceResults);
     }
   }
 }
 
 /**
- * Prints a summary for multiple devices across multiple iOS versions
+ * Creates and prints a table for a set of benchmark results
  */
-function printMultiDeviceSummary(results: BenchmarkResult[]): void {
-  const iosGroups = groupResultsByIosVersion(results);
+function printResultTable(results: BenchmarkResult[]): void {
+  const tableData = results.map(result => ({
+    "iOS Version": result.iosVersion,
+    "Cold Boot (sec)": (result.coldBootTimeMs / 1000).toFixed(1),
+    "Warm Boot (sec)": (result.warmBootTimeMs / 1000).toFixed(1),
+    "Time to Idle (sec)": result.timeToIdleMs ? (result.timeToIdleMs / 1000).toFixed(1) : "N/A"
+  }));
+  
+  console.table(tableData);
+}
 
-  for (const [iosVersion, iosResults] of iosGroups.entries()) {
-    console.log(`\niOS %c${iosVersion}%c:`, styles.iosVersion, styles.reset);
+/**
+ * Groups benchmark results by device name
+ */
+function groupResultsByDevice(
+  results: BenchmarkResult[]
+): Map<string, BenchmarkResult[]> {
+  const deviceGroups = new Map<string, BenchmarkResult[]>();
 
-    // Print each device's results under this iOS version
-    for (const result of iosResults) {
-      console.log(
-        `  %c${result.deviceName}%c: Boot + App Launch: Cold: %c${Math.round(
-          result.coldBootTimeMs / 1000
-        )}%cs, Warm: %c${Math.round(result.warmBootTimeMs / 1000)}%cs`,
-        styles.deviceName,
-        styles.reset,
-        styles.timingValue,
-        styles.reset,
-        styles.timingValue,
-        styles.reset
-      );
-      
-      // Only display the time to idle for cold boots if available
-      if (result.timeToIdleMs) {
-        console.log(
-          `    Time to idle system (cold boot): %c${Math.round(result.timeToIdleMs / 1000)}%cs`,
-          styles.timingValue,
-          styles.reset
-        );
-      }
+  for (const result of results) {
+    if (!deviceGroups.has(result.deviceName)) {
+      deviceGroups.set(result.deviceName, []);
     }
+    deviceGroups.get(result.deviceName)?.push(result);
   }
+
+  return deviceGroups;
 }
 
 /**
