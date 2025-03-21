@@ -12,7 +12,6 @@ export interface BenchmarkResult {
   deviceName: string;
   coldBootTimeMs: number;
   warmBootTimeMs: number;
-  differenceMs: number;
   runs: number;
   timeToIdleMs?: number; // Time until system becomes idle after cold boot
 }
@@ -77,7 +76,6 @@ export async function runBootBenchmark(
       deviceName,
       coldBootTimeMs: avgColdBootTimeMs,
       warmBootTimeMs: avgWarmBootTimeMs,
-      differenceMs: avgColdBootTimeMs - avgWarmBootTimeMs,
       runs: runCount,
       timeToIdleMs: avgTimeToIdleMs,
     };

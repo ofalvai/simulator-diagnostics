@@ -43,9 +43,7 @@ function printSingleDeviceSummary(results: BenchmarkResult[]): void {
     console.log(
       `  Boot + App Launch: Cold: %c${Math.round(result.coldBootTimeMs / 1000)}%cs, Warm: %c${
         Math.round(result.warmBootTimeMs / 1000)
-      }%cs, Diff: %c${Math.round(result.differenceMs / 1000)}%cs`,
-      styles.timingValue,
-      styles.reset,
+      }%cs`,
       styles.timingValue,
       styles.reset,
       styles.timingValue,
@@ -77,12 +75,8 @@ function printMultiDeviceSummary(results: BenchmarkResult[]): void {
       console.log(
         `  %c${result.deviceName}%c: Boot + App Launch: Cold: %c${Math.round(
           result.coldBootTimeMs / 1000
-        )}%cs, Warm: %c${Math.round(result.warmBootTimeMs / 1000)}%cs, Diff: %c${
-          Math.round(result.differenceMs / 1000)
-        }%cs`,
+        )}%cs, Warm: %c${Math.round(result.warmBootTimeMs / 1000)}%cs`,
         styles.deviceName,
-        styles.reset,
-        styles.timingValue,
         styles.reset,
         styles.timingValue,
         styles.reset,
