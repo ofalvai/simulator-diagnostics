@@ -1,4 +1,4 @@
-import { getAllRuntimes, getCoreSimulatorVersion } from "./simctl.ts";
+import { getAllRuntimes, getCoreSimulatorVersion, getMacOSVersion } from "./simctl.ts";
 import { runBootBenchmark } from "./benchmark.ts";
 import { printBenchmarkSummary } from "./reporting.ts";
 import { styles } from "./styles.ts";
@@ -19,8 +19,10 @@ export async function benchmarkBootCommand(
     Deno.exit(1);
   }
 
-  // Get CoreSimulator version
+  const macOSVersion = await getMacOSVersion();
   const coreSimulatorVersion = await getCoreSimulatorVersion();
+  
+  console.log(`%cmacOS version: %c${macOSVersion}`, styles.header, styles.timingValue);
   console.log(`%cCoreSimulator.framework version: %c${coreSimulatorVersion}`, styles.header, styles.timingValue);
 
   console.log("Gathering information about available iOS runtimes...");

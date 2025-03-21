@@ -46,6 +46,20 @@ export async function getCoreSimulatorVersion(): Promise<string> {
   }
 }
 
+export async function getMacOSVersion(): Promise<string> {
+  const command = new Deno.Command("sw_vers", {
+    args: ["--productVersion"],
+  });
+
+  try {
+    const { stdout } = await command.output();
+    return new TextDecoder().decode(stdout).trim();
+  } catch (error) {
+    console.error("Failed to get macOS version:", error);
+    return "unknown";
+  }
+}
+
 export async function getAllRuntimes(): Promise<Runtime[]> {
   if (cachedRuntimes) {
     return cachedRuntimes;
