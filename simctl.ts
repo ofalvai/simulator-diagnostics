@@ -225,16 +225,53 @@ export async function measureBootTime(deviceId: string): Promise<number> {
 }
 
 /**
+ * Executes a command in the simulator
+ * @param command The command to execute in the simulator
+ */
+export async function executeCommand(command: string): Promise<void> {
+  console.log(`Executing in simulator: ${command}`);
+  
+  try {
+    // Use xcrun simctl spawn booted to run the command in the simulator
+    const process = new Deno.Command("xcrun", {
+      args: ["simctl", "spawn", "booted", ...command.split(' ')],
+    });
+    
+    const { code, stdout } = await process.output();
+    
+    if (code === 0) {
+      console.log(`%cCommand executed successfully in simulator`, styles.success);
+      
+      // Display command output if any
+      const output = new TextDecoder().decode(stdout).trim();
+      if (output) {
+        console.log(`Command output:\n${output}`);
+      }
+    } else {
+      console.error(`%cCommand failed in simulator with exit code ${code}`, styles.error);
+    }
+  } catch (error) {
+    console.error(`%cError executing command in simulator: ${error.message}`, styles.error);
+  }
+}
+
+/**
  * Waits for the system to become idle by monitoring the load average
  * @param idleThreshold The load average threshold to consider the system idle
+ * @param commandToRun Optional command to run before waiting for idle
  * @returns The time in milliseconds that it took for the system to become idle
  */
-export async function waitForSystemIdle(idleThreshold: number): Promise<number> {
+export async function waitForSystemIdle(idleThreshold: number, commandToRun: string | null = null): Promise<number> {
+  // If a command was provided, execute it first
+  if (commandToRun) {
+    await executeCommand(commandToRun);
+  }
+  
   console.log(`Waiting for system to idle...`);
   const startTime = performance.now();
   let isIdle = false;
   
-  // Poll every 10 seconds
+  // Poll every few seconds
   while (!isIdle) {
     const loadAvg = Deno.loadavg();
     const oneMinuteLoad = loadAvg[0];
@@ -243,7 +280,7 @@ export async function waitForSystemIdle(idleThreshold: number): Promise<number> 
     if (oneMinuteLoad < idleThreshold) {
       isIdle = true;
     } else {
-      // Wait 10 seconds before checking again
+      // Wait before checking again
       await new Promise(resolve => setTimeout(resolve, 3000));
     }
   }

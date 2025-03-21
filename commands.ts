@@ -10,7 +10,8 @@ export async function benchmarkBootCommand(
   iosVersions: string[],
   deviceNames: string[],
   runCount: number = 1,
-  idleThreshold: number = 2.0
+  idleThreshold: number = 2.0,
+  spawnCommand: string | null = null
 ): Promise<void> {
   if (iosVersions.length === 0 || deviceNames.length === 0) {
     console.error("Please provide both --ios and --device flags");
@@ -41,10 +42,15 @@ export async function benchmarkBootCommand(
 
   const results = [];
 
+  // Display the command that will be spawned after boot if provided
+  if (spawnCommand) {
+    console.log(`%cCommand to execute in simulator after boot: %c${spawnCommand}`, styles.header, styles.deviceName);
+  }
+
   // Run benchmark for each combination of iOS version and device
   for (const iosVersion of iosVersions) {
     for (const deviceName of deviceNames) {
-      const result = await runBootBenchmark(iosVersion, deviceName, runCount, idleThreshold);
+      const result = await runBootBenchmark(iosVersion, deviceName, runCount, idleThreshold, spawnCommand);
       if (result) {
         results.push(result);
       }

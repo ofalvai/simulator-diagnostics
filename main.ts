@@ -19,7 +19,7 @@ if (import.meta.main) {
 async function main() {
   const { _: subcommands, ...flags } = parseArgs(Deno.args, {
     collect: ["ios", "device"], // Allow multiple iOS versions and devices
-    string: ["ios", "device", "runs", "idle-threshold"], // Treat flags as strings
+    string: ["ios", "device", "runs", "idle-threshold", "spawn-after-boot"], // Treat flags as strings
   });
 
   const command = subcommands[0];
@@ -32,7 +32,7 @@ async function main() {
   // Process commands
   switch (command) {
     case "benchmark-boot": {
-      const { ios, device, runs, "idle-threshold": idleThreshold } = flags;
+      const { ios, device, runs, "idle-threshold": idleThreshold, "spawn-after-boot": spawnCommand } = flags;
 
       // Convert to arrays, handling both single and multiple values
       const iosVersions = ios ? (Array.isArray(ios) ? ios : [ios]) : [];
@@ -45,8 +45,11 @@ async function main() {
       
       // Default idle threshold to 2.0 if not specified
       const idleThresholdValue = typeof idleThreshold === 'string' ? parseFloat(idleThreshold) : 2.0;
+      
+      // Command to spawn after boot (optional)
+      const commandToSpawn = typeof spawnCommand === 'string' ? spawnCommand : null;
 
-      await benchmarkBootCommand(iosVersions, deviceNames, runCount, idleThresholdValue);
+      await benchmarkBootCommand(iosVersions, deviceNames, runCount, idleThresholdValue, commandToSpawn);
       break;
     }
     default: {
@@ -79,9 +82,12 @@ function printUsage(): void {
   console.error(
     "  --idle-threshold <name>  Load average threshold to consider system idle (default: 2.0)",
   );
+  console.error(
+    '  --spawn-after-boot "cmd"  Command to execute in the simulator after boot',
+  );
   console.error("\nExample:");
   console.error(
-    '  deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14" --runs 3 --idle-threshold 1.0',
+    '  deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14" --runs 3 --idle-threshold 1.0 --spawn-after-boot "launchctl bootout system/com.apple.diagnosticd"',
   );
   console.error("\nDiagnostic Information:");
   console.error("  • Shows CoreSimulator framework version");
