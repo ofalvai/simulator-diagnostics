@@ -41,7 +41,7 @@ function printSingleDeviceSummary(results: BenchmarkResult[]): void {
     // We only have one device, so just print its results
     const result = iosResults[0]; // Only one device per iOS version
     console.log(
-      `  Cold: %c${Math.round(result.coldBootTimeMs / 1000)}%cs, Warm: %c${
+      `  Boot + App Launch: Cold: %c${Math.round(result.coldBootTimeMs / 1000)}%cs, Warm: %c${
         Math.round(result.warmBootTimeMs / 1000)
       }%cs, Diff: %c${Math.round(result.differenceMs / 1000)}%cs`,
       styles.timingValue,
@@ -51,6 +51,15 @@ function printSingleDeviceSummary(results: BenchmarkResult[]): void {
       styles.timingValue,
       styles.reset
     );
+    
+    // Only display the time to idle for cold boots if available
+    if (result.timeToIdleMs) {
+      console.log(
+        `  Time to idle system (cold boot): %c${Math.round(result.timeToIdleMs / 1000)}%cs`,
+        styles.timingValue,
+        styles.reset
+      );
+    }
   }
 }
 
@@ -66,7 +75,7 @@ function printMultiDeviceSummary(results: BenchmarkResult[]): void {
     // Print each device's results under this iOS version
     for (const result of iosResults) {
       console.log(
-        `  %c${result.deviceName}%c: Cold: %c${Math.round(
+        `  %c${result.deviceName}%c: Boot + App Launch: Cold: %c${Math.round(
           result.coldBootTimeMs / 1000
         )}%cs, Warm: %c${Math.round(result.warmBootTimeMs / 1000)}%cs, Diff: %c${
           Math.round(result.differenceMs / 1000)
@@ -80,6 +89,15 @@ function printMultiDeviceSummary(results: BenchmarkResult[]): void {
         styles.timingValue,
         styles.reset
       );
+      
+      // Only display the time to idle for cold boots if available
+      if (result.timeToIdleMs) {
+        console.log(
+          `    Time to idle system (cold boot): %c${Math.round(result.timeToIdleMs / 1000)}%cs`,
+          styles.timingValue,
+          styles.reset
+        );
+      }
     }
   }
 }

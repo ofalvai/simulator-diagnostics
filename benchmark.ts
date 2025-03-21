@@ -3,6 +3,7 @@ import {
   getDeviceId,
   measureBootTime,
   shutdownDevice,
+  waitForSystemIdle,
 } from "./simctl.ts";
 import { styles } from "./styles.ts";
 
@@ -13,16 +14,18 @@ export interface BenchmarkResult {
   warmBootTimeMs: number;
   differenceMs: number;
   runs: number;
+  timeToIdleMs?: number; // Time until system becomes idle after cold boot
 }
 
 /**
  * Benchmarks the boot time of a specific iOS simulator
- * Measures both cold and warm boot times
+ * Measures both cold and warm boot times, and time to system idle for cold boots
  */
 export async function runBootBenchmark(
   iosVersion: string,
   deviceName: string,
-  runCount: number = 1
+  runCount: number = 1,
+  idleThreshold: number = 2.0
 ): Promise<BenchmarkResult | null> {
   try {
     console.log(`\n========================================`);
@@ -37,6 +40,7 @@ export async function runBootBenchmark(
     
     let totalColdBootTimeMs = 0;
     let totalWarmBootTimeMs = 0;
+    let totalTimeToIdleMs = 0;
     
     for (let i = 0; i < runCount; i++) {
       console.log(`\n--- Run ${i + 1} of ${runCount} ---`);
@@ -48,6 +52,9 @@ export async function runBootBenchmark(
       const coldBootTime = await measureBootTime(deviceId);
       totalColdBootTimeMs += coldBootTime;
 
+      const timeToIdle = await waitForSystemIdle(idleThreshold);
+      totalTimeToIdleMs += coldBootTime + timeToIdle;
+      
       // Shut down the simulator after measurement
       await shutdownDevice(deviceId);
 
@@ -63,6 +70,7 @@ export async function runBootBenchmark(
     // Calculate average times
     const avgColdBootTimeMs = totalColdBootTimeMs / runCount;
     const avgWarmBootTimeMs = totalWarmBootTimeMs / runCount;
+    const avgTimeToIdleMs = totalTimeToIdleMs / runCount;
 
     return {
       iosVersion,
@@ -71,6 +79,7 @@ export async function runBootBenchmark(
       warmBootTimeMs: avgWarmBootTimeMs,
       differenceMs: avgColdBootTimeMs - avgWarmBootTimeMs,
       runs: runCount,
+      timeToIdleMs: avgTimeToIdleMs,
     };
   } catch (error: any) {
     console.error(

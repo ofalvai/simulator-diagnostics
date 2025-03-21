@@ -224,6 +224,37 @@ export async function measureBootTime(deviceId: string): Promise<number> {
   return endTime - startTime;
 }
 
+/**
+ * Waits for the system to become idle by monitoring the load average
+ * @param idleThreshold The load average threshold to consider the system idle
+ * @returns The time in milliseconds that it took for the system to become idle
+ */
+export async function waitForSystemIdle(idleThreshold: number): Promise<number> {
+  console.log(`Waiting for system to idle...`);
+  const startTime = performance.now();
+  let isIdle = false;
+  
+  // Poll every 10 seconds
+  while (!isIdle) {
+    const loadAvg = Deno.loadavg();
+    const oneMinuteLoad = loadAvg[0];
+    console.log(`1m load: ${oneMinuteLoad.toFixed(2)} (threshold: ${idleThreshold})...`);
+    
+    if (oneMinuteLoad < idleThreshold) {
+      isIdle = true;
+    } else {
+      // Wait 10 seconds before checking again
+      await new Promise(resolve => setTimeout(resolve, 10000));
+    }
+  }
+  
+  const endTime = performance.now();
+  const totalIdleWaitTime = Math.round((endTime - startTime) / 1000);
+  console.log(`%cSystem idle reached after ${totalIdleWaitTime}s`, styles.success);
+  
+  return endTime - startTime;
+}
+
 export async function shutdownDevice(deviceId: string): Promise<void> {
   const command = new Deno.Command("xcrun", {
     args: ["simctl", "shutdown", deviceId],

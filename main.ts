@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-run --allow-read
+#!/usr/bin/env -S deno run --allow-run --allow-read --allow-sys
 
 import { parseArgs } from "@std/cli";
 import { benchmarkBootCommand } from "./commands.ts";
@@ -19,7 +19,7 @@ if (import.meta.main) {
 async function main() {
   const { _: subcommands, ...flags } = parseArgs(Deno.args, {
     collect: ["ios", "device"], // Allow multiple iOS versions and devices
-    string: ["ios", "device", "runs"], // Treat flags as strings
+    string: ["ios", "device", "runs", "idle-threshold"], // Treat flags as strings
   });
 
   const command = subcommands[0];
@@ -32,7 +32,7 @@ async function main() {
   // Process commands
   switch (command) {
     case "benchmark-boot": {
-      const { ios, device, runs } = flags;
+      const { ios, device, runs, "idle-threshold": idleThreshold } = flags;
 
       // Convert to arrays, handling both single and multiple values
       const iosVersions = ios ? (Array.isArray(ios) ? ios : [ios]) : [];
@@ -42,8 +42,11 @@ async function main() {
       
       // Default to 1 run if not specified
       const runCount = typeof runs === 'string' ? parseInt(runs) : 1;
+      
+      // Default idle threshold to 2.0 if not specified
+      const idleThresholdValue = typeof idleThreshold === 'string' ? parseFloat(idleThreshold) : 2.0;
 
-      await benchmarkBootCommand(iosVersions, deviceNames, runCount);
+      await benchmarkBootCommand(iosVersions, deviceNames, runCount, idleThresholdValue);
       break;
     }
     default: {
@@ -73,9 +76,12 @@ function printUsage(): void {
   console.error(
     "  --runs <name>     Number of times to repeat benchmarks (default: 1)",
   );
+  console.error(
+    "  --idle-threshold <name>  Load average threshold to consider system idle (default: 2.0)",
+  );
   console.error("\nExample:");
   console.error(
-    '  deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14" --runs 3',
+    '  deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14" --runs 3 --idle-threshold 1.0',
   );
   console.error("\nDiagnostic Information:");
   console.error("  • Shows CoreSimulator framework version");

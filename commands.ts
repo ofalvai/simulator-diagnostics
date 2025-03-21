@@ -9,7 +9,8 @@ import { styles } from "./styles.ts";
 export async function benchmarkBootCommand(
   iosVersions: string[],
   deviceNames: string[],
-  runCount: number = 1
+  runCount: number = 1,
+  idleThreshold: number = 2.0
 ): Promise<void> {
   if (iosVersions.length === 0 || deviceNames.length === 0) {
     console.error("Please provide both --ios and --device flags");
@@ -43,7 +44,7 @@ export async function benchmarkBootCommand(
   // Run benchmark for each combination of iOS version and device
   for (const iosVersion of iosVersions) {
     for (const deviceName of deviceNames) {
-      const result = await runBootBenchmark(iosVersion, deviceName, runCount);
+      const result = await runBootBenchmark(iosVersion, deviceName, runCount, idleThreshold);
       if (result) {
         results.push(result);
       }
