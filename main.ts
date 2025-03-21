@@ -18,7 +18,7 @@ if (import.meta.main) {
  */
 async function main() {
   const { _: subcommands, ...flags } = parseArgs(Deno.args, {
-    collect: ["ios", "device"], // Allow multiple iOS versions and devices
+    collect: ["ios", "device", "spawn-after-boot"], // Allow multiple values for these flags
     string: ["ios", "device", "runs", "idle-threshold", "spawn-after-boot"], // Treat flags as strings
   });
 
@@ -32,7 +32,7 @@ async function main() {
   // Process commands
   switch (command) {
     case "benchmark-boot": {
-      const { ios, device, runs, "idle-threshold": idleThreshold, "spawn-after-boot": spawnCommand } = flags;
+      const { ios, device, runs, "idle-threshold": idleThreshold, "spawn-after-boot": spawnCommands } = flags;
 
       // Convert to arrays, handling both single and multiple values
       const iosVersions = ios ? (Array.isArray(ios) ? ios : [ios]) : [];
@@ -46,10 +46,13 @@ async function main() {
       // Default idle threshold to 2.0 if not specified
       const idleThresholdValue = typeof idleThreshold === 'string' ? parseFloat(idleThreshold) : 2.0;
       
-      // Command to spawn after boot (optional)
-      const commandToSpawn = typeof spawnCommand === 'string' ? spawnCommand : null;
+      // Commands to spawn after boot (optional)
+      // Convert to array, handling both single and multiple values
+      const commandsToSpawn = spawnCommands 
+        ? (Array.isArray(spawnCommands) ? spawnCommands : [spawnCommands]) 
+        : null;
 
-      await benchmarkBootCommand(iosVersions, deviceNames, runCount, idleThresholdValue, commandToSpawn);
+      await benchmarkBootCommand(iosVersions, deviceNames, runCount, idleThresholdValue, commandsToSpawn);
       break;
     }
     default: {
@@ -83,7 +86,7 @@ function printUsage(): void {
     "  --idle-threshold <name>  Load average threshold to consider system idle (default: 2.0)",
   );
   console.error(
-    '  --spawn-after-boot "cmd"  Command to execute in the simulator after boot',
+    '  --spawn-after-boot "cmd"  Command to execute in the simulator after boot (can be specified multiple times)',
   );
   console.error("\nExample:");
   console.error(

@@ -25,7 +25,7 @@ export async function runBootBenchmark(
   deviceName: string,
   runCount: number = 1,
   idleThreshold: number = 2.0,
-  spawnCommand: string | null = null
+  spawnCommands: string[] | null = null
 ): Promise<BenchmarkResult | null> {
   try {
     console.log(`\n========================================`);
@@ -52,7 +52,7 @@ export async function runBootBenchmark(
       const coldBootTime = await measureBootTime(deviceId);
       totalColdBootTimeMs += coldBootTime;
 
-      const timeToIdle = await waitForSystemIdle(idleThreshold, spawnCommand);
+      const timeToIdle = await waitForSystemIdle(idleThreshold, spawnCommands);
       totalTimeToIdleMs += coldBootTime + timeToIdle;
       
       // Shut down the simulator after measurement

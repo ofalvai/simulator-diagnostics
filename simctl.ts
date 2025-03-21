@@ -258,13 +258,18 @@ export async function executeCommand(command: string): Promise<void> {
 /**
  * Waits for the system to become idle by monitoring the load average
  * @param idleThreshold The load average threshold to consider the system idle
- * @param commandToRun Optional command to run before waiting for idle
+ * @param commands Optional array of commands to run serially before waiting for idle
  * @returns The time in milliseconds that it took for the system to become idle
  */
-export async function waitForSystemIdle(idleThreshold: number, commandToRun: string | null = null): Promise<number> {
-  // If a command was provided, execute it first
-  if (commandToRun) {
-    await executeCommand(commandToRun);
+export async function waitForSystemIdle(idleThreshold: number, commands: string[] | null = null): Promise<number> {
+  // If commands were provided, execute them serially
+  if (commands && commands.length > 0) {
+    console.log(`Executing ${commands.length} command(s) in simulator in sequence...`);
+    
+    for (let i = 0; i < commands.length; i++) {
+      console.log(`%cExecuting command ${i + 1} of ${commands.length}:%c`, styles.header, styles.reset);
+      await executeCommand(commands[i]);
+    }
   }
   
   console.log(`Waiting for system to idle...`);
