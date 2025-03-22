@@ -45,6 +45,23 @@ export async function runBootBenchmark(
     for (let i = 0; i < runCount; i++) {
       console.log(`\n--- Run ${i + 1} of ${runCount} ---`);
       
+      // Wait for system to stabilize before starting the benchmark
+      if (i > 0) { // Skip first run since system is likely already stable
+        console.log(`\nWaiting 60 seconds for system load to stabilize...`);
+        const startWait = performance.now();
+        let waitSecs = 0;
+        
+        // Show progress every 10 seconds
+        while (waitSecs < 60) {
+          await new Promise(resolve => setTimeout(resolve, 10000)); // 10 second intervals
+          waitSecs += 10;
+          const loadAvg = Deno.loadavg();
+          console.log(`  Waited ${waitSecs}s of 60s (current 1m load: ${loadAvg[0].toFixed(2)})...`);
+        }
+        
+        console.log(`%cSystem stabilization wait complete.`, styles.success);
+      }
+      
       // COLD BOOT: Erase device to ensure a cold boot
       console.log(`\n--- Cold Boot Test ---`);
       await eraseDevice(deviceId);
