@@ -64,34 +64,6 @@ interface RuntimesOutput {
 let cachedDevices: SimCtlOutput | null = null;
 let cachedRuntimes: Runtime[] | null = null;
 
-export async function getCoreSimulatorVersion(): Promise<string> {
-  const command = new Deno.Command("/usr/libexec/PlistBuddy", {
-    args: ["-c", "print 'CFBundleVersion'", "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Resources/Info.plist"],
-  });
-
-  try {
-    const { stdout } = await command.output();
-    return new TextDecoder().decode(stdout).trim();
-  } catch (error) {
-    console.error("Failed to get CoreSimulator version:", error);
-    return "unknown";
-  }
-}
-
-export async function getMacOSVersion(): Promise<string> {
-  const command = new Deno.Command("sw_vers", {
-    args: ["--productVersion"],
-  });
-
-  try {
-    const { stdout } = await command.output();
-    return new TextDecoder().decode(stdout).trim();
-  } catch (error) {
-    console.error("Failed to get macOS version:", error);
-    return "unknown";
-  }
-}
-
 export async function getAllRuntimes(): Promise<Runtime[]> {
   if (cachedRuntimes) {
     return cachedRuntimes;
@@ -216,13 +188,18 @@ export async function eraseDevice(deviceId: string): Promise<void> {
 
   if (code !== 0) {
     const errorMessage = new TextDecoder().decode(stderr);
-    throw new HardSimulatorError(`Failed to erase simulator with ID: ${deviceId}. ${errorMessage}`);
+    throw new HardSimulatorError(
+      `Failed to erase simulator with ID: ${deviceId}. ${errorMessage}`,
+    );
   }
 
   console.log("%cSimulator erased successfully.", styles.success);
 }
 
-export async function measureBootTime(deviceId: string, commands: string[] | null = null): Promise<number> {
+export async function measureBootTime(
+  deviceId: string,
+  commands: string[] | null = null,
+): Promise<number> {
   console.log(`Booting simulator with ID: ${deviceId}`);
 
   const startTime = performance.now();
@@ -236,32 +213,45 @@ export async function measureBootTime(deviceId: string, commands: string[] | nul
 
   if (bootCode !== 0) {
     const errorMessage = new TextDecoder().decode(stderr);
-    throw new HardSimulatorError(`Failed to boot simulator with ID: ${deviceId}. ${errorMessage}`);
+    throw new HardSimulatorError(
+      `Failed to boot simulator with ID: ${deviceId}. ${errorMessage}`,
+    );
   }
-  
+
   // Execute user-specified commands immediately after boot if provided
   if (commands && commands.length > 0) {
-    console.log(`Executing ${commands.length} post-boot command(s) in simulator...`);
-    
+    console.log(
+      `Executing ${commands.length} post-boot command(s) in simulator...`,
+    );
+
     for (let i = 0; i < commands.length; i++) {
-      console.log(`%cExecuting command ${i + 1} of ${commands.length}:%c`, styles.header, styles.reset);
+      console.log(
+        `%cExecuting command ${i + 1} of ${commands.length}:%c`,
+        styles.header,
+        styles.reset,
+      );
       // Consider all post-boot commands as critical
       await executeCommand(commands[i], true);
     }
   }
-  
-  console.log(`Basic boot completed. Launching Settings app to verify full usability...`);
-  
+
+  console.log(
+    `Basic boot completed. Launching Settings app to verify full usability...`,
+  );
+
   // Then launch an app to ensure the simulator is fully usable
   const launchCommand = new Deno.Command("xcrun", {
     args: ["simctl", "launch", "booted", "com.apple.Preferences"],
   });
-  
-  const { code: launchCode, stderr: launchStderr } = await launchCommand.output();
-  
+
+  const { code: launchCode, stderr: launchStderr } = await launchCommand
+    .output();
+
   if (launchCode !== 0) {
     const errorMessage = new TextDecoder().decode(launchStderr);
-    throw new HardSimulatorError(`Failed to launch Settings app on booted simulator. ${errorMessage}`);
+    throw new HardSimulatorError(
+      `Failed to launch Settings app on booted simulator. ${errorMessage}`,
+    );
   }
 
   const endTime = performance.now();
@@ -271,51 +261,66 @@ export async function measureBootTime(deviceId: string, commands: string[] | nul
 }
 
 /**
- * Executes a command in the simulator
+ * Executes a command in the context of the simulator
  * @param command The command to execute in the simulator
- * @param critical Whether this command is critical and should cause a hard error on failure
+ * @param critical Whether this command is critical and should cause a hard error on command failure
  */
-export async function executeCommand(command: string, critical: boolean = false): Promise<void> {
+export async function executeCommand(
+  command: string,
+  critical: boolean = false,
+): Promise<void> {
   console.log(`Executing in simulator: ${command}`);
-  
+
   try {
-    // Use xcrun simctl spawn booted to run the command in the simulator
     const process = new Deno.Command("xcrun", {
-      args: ["simctl", "spawn", "booted", ...command.split(' ')],
+      args: ["simctl", "spawn", "booted", ...command.split(" ")],
     });
-    
+
     const { code, stdout, stderr } = await process.output();
-    
+
     if (code === 0) {
-      console.log(`%cCommand executed successfully in simulator`, styles.success);
-      
-      // Display command output if any
+      console.log(`%cSuccess`, styles.success);
+
       const output = new TextDecoder().decode(stdout).trim();
       if (output) {
-        console.log(`Command output:\n${output}`);
+        console.log(`Output:\n${output}`);
       }
     } else {
       const errorOutput = new TextDecoder().decode(stderr).trim();
-      console.error(`%cCommand failed in simulator with exit code ${code}`, styles.error);
-      
+      console.error(
+        `%cCommand failed in simulator with exit code ${code}`,
+        styles.error,
+      );
+
       if (critical) {
-        throw new HardSimulatorError(`Critical command failed in simulator: ${command}. Exit code: ${code}. Error: ${errorOutput}`);
+        throw new HardSimulatorError(
+          `Critical command failed in simulator: ${command}. Exit code: ${code}. Error: ${errorOutput}`,
+        );
       } else {
-        throw new SoftSimulatorError(`Command failed in simulator: ${command}. Exit code: ${code}. Error: ${errorOutput}`);
+        throw new SoftSimulatorError(
+          `Command failed in simulator: ${command}. Exit code: ${code}. Error: ${errorOutput}`,
+        );
       }
     }
   } catch (error: any) {
     if (error instanceof SimulatorError) {
       throw error; // Re-throw simulator errors
     }
-    
+
     // Handle other types of errors
-    console.error(`%cError executing command in simulator: ${error.message}`, styles.error);
-    
+    console.error(
+      `%cError executing command in simulator: ${error.message}`,
+      styles.error,
+    );
+
     if (critical) {
-      throw new HardSimulatorError(`Critical error executing command in simulator: ${error.message}`);
+      throw new HardSimulatorError(
+        `Critical error executing command in simulator: ${error.message}`,
+      );
     } else {
-      throw new SoftSimulatorError(`Error executing command in simulator: ${error.message}`);
+      throw new SoftSimulatorError(
+        `Error executing command in simulator: ${error.message}`,
+      );
     }
   }
 }
@@ -326,41 +331,53 @@ export async function executeCommand(command: string, critical: boolean = false)
  * @param idleTimeout Maximum seconds to wait for system to become idle
  * @returns The time in milliseconds that it took for the system to become idle
  */
-export async function waitForSystemIdle(idleThreshold: number, idleTimeout: number = 300): Promise<number> {
-  
+export async function waitForSystemIdle(
+  idleThreshold: number,
+  idleTimeout: number = 300,
+): Promise<number> {
   console.log(`Waiting for system to idle...`);
   const startTime = performance.now();
   let isIdle = false;
-  
+
   // Calculate timeout end time
   const timeoutTime = startTime + (idleTimeout * 1000);
-  
+
   // Poll every few seconds
   while (!isIdle && performance.now() < timeoutTime) {
     const currentTime = performance.now();
     const elapsedSeconds = Math.round((currentTime - startTime) / 1000);
-    
+
     const loadAvg = Deno.loadavg();
     const oneMinuteLoad = loadAvg[0];
-    console.log(`[${elapsedSeconds}s] 1m load: ${oneMinuteLoad.toFixed(2)} (threshold: ${idleThreshold})...`);
-    
+    console.log(
+      `[${elapsedSeconds}s] 1m load: ${
+        oneMinuteLoad.toFixed(2)
+      } (threshold: ${idleThreshold})...`,
+    );
+
     if (oneMinuteLoad < idleThreshold) {
       isIdle = true;
     } else {
       // Wait before checking again
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
     }
   }
-  
+
   const endTime = performance.now();
   const totalIdleWaitTime = Math.round((endTime - startTime) / 1000);
-  
+
   if (isIdle) {
-    console.log(`%cSystem idle reached after ${totalIdleWaitTime}s`, styles.success);
+    console.log(
+      `%cSystem idle reached after ${totalIdleWaitTime}s`,
+      styles.success,
+    );
   } else {
-    console.log(`%cTimed out waiting for system to become idle after ${idleTimeout}s`, styles.warning);
+    console.log(
+      `%cTimed out waiting for system to become idle after ${idleTimeout}s`,
+      styles.warning,
+    );
   }
-  
+
   return endTime - startTime;
 }
 
@@ -370,11 +387,17 @@ export async function shutdownDevice(deviceId: string): Promise<void> {
   });
 
   const { code, stdout, stderr } = await command.output();
-  
+
   if (code !== 0) {
-    const combinedOutput = new TextDecoder().decode(stdout) + new TextDecoder().decode(stderr);
-    console.error(`%cError shutting down simulator: ${combinedOutput}`, styles.error);
-    throw new HardSimulatorError(`Failed to shutdown simulator with ID: ${deviceId}. This is a critical error as it may leave the simulator running.`);
+    const combinedOutput = new TextDecoder().decode(stdout) +
+      new TextDecoder().decode(stderr);
+    console.error(
+      `%cError shutting down simulator: ${combinedOutput}`,
+      styles.error,
+    );
+    throw new HardSimulatorError(
+      `Failed to shutdown simulator with ID: ${deviceId}. This is a critical error as it may leave the simulator running.`,
+    );
   }
 
   console.log("%cSimulator shut down successfully.", styles.success);

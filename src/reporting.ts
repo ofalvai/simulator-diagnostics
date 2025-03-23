@@ -8,7 +8,7 @@ import { BenchmarkResult } from "./benchmark.ts";
  */
 export function printBenchmarkSummary(
   results: BenchmarkResult[],
-  deviceNames: string[]
+  deviceNames: string[],
 ): void {
   if (results.length === 0) {
     console.error("No results to display.");
@@ -17,7 +17,10 @@ export function printBenchmarkSummary(
 
   console.log(`\n============================================`);
   console.log(`%cSUMMARY OF ALL BENCHMARKS`, styles.header);
-  console.log(`%c(Average across ${results[0]?.runs || 1} runs)`, styles.deviceName);
+  console.log(
+    `%c(Average across ${results[0]?.runs || 1} runs)`,
+    styles.deviceName,
+  );
   console.log(`============================================`);
 
   // If we only have one device, just pass the results directly
@@ -37,12 +40,14 @@ export function printBenchmarkSummary(
  * Creates and prints a table for a set of benchmark results
  */
 function printResultTable(results: BenchmarkResult[]): void {
-  const tableData = results.map(result => ({
+  const tableData = results.map((result) => ({
     "iOS Version": result.iosVersion,
     "Boot Time (sec)": (result.bootTimeMs / 1000).toFixed(1),
-    "Time to Idle (sec)": result.timeToIdleMs ? (result.timeToIdleMs / 1000).toFixed(1) : "N/A"
+    "Time to Idle (sec)": result.timeToIdleMs
+      ? (result.timeToIdleMs / 1000).toFixed(1)
+      : "N/A",
   }));
-  
+
   console.table(tableData);
 }
 
@@ -50,7 +55,7 @@ function printResultTable(results: BenchmarkResult[]): void {
  * Groups benchmark results by device name
  */
 function groupResultsByDevice(
-  results: BenchmarkResult[]
+  results: BenchmarkResult[],
 ): Map<string, BenchmarkResult[]> {
   const deviceGroups = new Map<string, BenchmarkResult[]>();
 
@@ -68,7 +73,7 @@ function groupResultsByDevice(
  * Groups benchmark results by iOS version
  */
 function groupResultsByIosVersion(
-  results: BenchmarkResult[]
+  results: BenchmarkResult[],
 ): Map<string, BenchmarkResult[]> {
   const iosGroups = new Map<string, BenchmarkResult[]>();
 

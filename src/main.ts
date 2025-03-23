@@ -8,14 +8,10 @@ import { benchmarkBootCommand } from "./commands.ts";
  * A tool for measuring and benchmarking iOS simulator performance
  */
 
-// Entry point
 if (import.meta.main) {
   main();
 }
 
-/**
- * Main function that parses command line arguments and dispatches to appropriate command handlers
- */
 async function main() {
   const { _: subcommands, ...flags } = parseArgs(Deno.args, {
     collect: ["ios", "device", "spawn-after-boot"], // Allow multiple values for these flags
@@ -29,16 +25,15 @@ async function main() {
     Deno.exit(1);
   }
 
-  // Process commands
   switch (command) {
     case "benchmark-boot": {
-      const { 
-        ios, 
-        device, 
-        runs, 
-        "idle-threshold": idleThreshold, 
-        "idle-timeout": idleTimeout, 
-        "spawn-after-boot": spawnCommands 
+      const {
+        ios,
+        device,
+        runs,
+        "idle-threshold": idleThreshold,
+        "idle-timeout": idleTimeout,
+        "spawn-after-boot": spawnCommands,
       } = flags;
 
       // Convert to arrays, handling both single and multiple values
@@ -46,23 +41,31 @@ async function main() {
       const deviceNames = device
         ? (Array.isArray(device) ? device : [device])
         : [];
-      
-      // Default to 1 run if not specified
-      const runCount = typeof runs === 'string' ? parseInt(runs) : 1;
-      
-      // Default idle threshold to 2.0 if not specified
-      const idleThresholdValue = typeof idleThreshold === 'string' ? parseFloat(idleThreshold) : 2.0;
-      
-      // Default idle timeout to 300 seconds if not specified  
-      const idleTimeoutValue = typeof idleTimeout === 'string' ? parseInt(idleTimeout) : 300;
-      
+
+      const runCount = typeof runs === "string" ? parseInt(runs) : 1;
+
+      const idleThresholdValue = typeof idleThreshold === "string"
+        ? parseFloat(idleThreshold)
+        : 2.0;
+
+      const idleTimeoutValue = typeof idleTimeout === "string"
+        ? parseInt(idleTimeout)
+        : 300;
+
       // Commands to spawn after boot (optional)
       // Convert to array, handling both single and multiple values
-      const commandsToSpawn = spawnCommands 
-        ? (Array.isArray(spawnCommands) ? spawnCommands : [spawnCommands]) 
+      const commandsToSpawn = spawnCommands
+        ? (Array.isArray(spawnCommands) ? spawnCommands : [spawnCommands])
         : null;
 
-      await benchmarkBootCommand(iosVersions, deviceNames, runCount, idleThresholdValue, commandsToSpawn, idleTimeoutValue);
+      await benchmarkBootCommand(
+        iosVersions,
+        deviceNames,
+        runCount,
+        idleThresholdValue,
+        commandsToSpawn,
+        idleTimeoutValue,
+      );
       break;
     }
     default: {
@@ -73,9 +76,6 @@ async function main() {
   }
 }
 
-/**
- * Prints CLI usage information
- */
 function printUsage(): void {
   console.error("iOS Simulator Diagnostics");
   console.error("\nUsage:");
@@ -105,5 +105,7 @@ function printUsage(): void {
   console.error("\nDiagnostic Information:");
   console.error("  • Shows CoreSimulator framework version");
   console.error("  • Lists available iOS simulator runtimes");
-  console.error("  • Provides detailed boot time benchmarks for specified devices and iOS versions");
+  console.error(
+    "  • Provides detailed boot time benchmarks for specified devices and iOS versions",
+  );
 }

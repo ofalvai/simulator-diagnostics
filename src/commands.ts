@@ -1,10 +1,7 @@
 import { runBootBenchmark } from "./benchmark.ts";
+import { getCoreSimulatorVersion, getMacOSVersion } from "./macos.ts";
 import { printBenchmarkSummary } from "./reporting.ts";
-import {
-  getAllRuntimes,
-  getCoreSimulatorVersion,
-  getMacOSVersion
-} from "./simctl.ts";
+import { getAllRuntimes } from "./simctl.ts";
 import { styles } from "./styles.ts";
 
 /**
@@ -16,21 +13,29 @@ export async function benchmarkBootCommand(
   runCount: number = 1,
   idleThreshold: number = 2.0,
   spawnCommands: string[] | null = null,
-  idleTimeout: number = 300
+  idleTimeout: number = 300,
 ): Promise<void> {
   if (iosVersions.length === 0 || deviceNames.length === 0) {
     console.error("Please provide both --ios and --device flags");
     console.error(
-      'Example: deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14" --runs 3'
+      'Example: deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14" --runs 3',
     );
     Deno.exit(1);
   }
 
   const macOSVersion = await getMacOSVersion();
   const coreSimulatorVersion = await getCoreSimulatorVersion();
-  
-  console.log(`%cmacOS version: %c${macOSVersion}`, styles.header, styles.timingValue);
-  console.log(`%cCoreSimulator.framework version: %c${coreSimulatorVersion}`, styles.header, styles.timingValue);
+
+  console.log(
+    `%cmacOS version: %c${macOSVersion}`,
+    styles.header,
+    styles.timingValue,
+  );
+  console.log(
+    `%cCoreSimulator.framework version: %c${coreSimulatorVersion}`,
+    styles.header,
+    styles.timingValue,
+  );
 
   console.log("Gathering information about available iOS runtimes...");
   await getAllRuntimes();
@@ -42,24 +47,36 @@ export async function benchmarkBootCommand(
     styles.timingValue,
     styles.reset,
     styles.timingValue,
-    styles.reset
+    styles.reset,
   );
 
   const results = [];
 
-  // Display the commands that will be spawned after boot if provided
   if (spawnCommands && spawnCommands.length > 0) {
-    console.log(`%cCommands to execute in simulator after boot:`, styles.header);
+    console.log(
+      `%cCommands to execute in simulator after boot:`,
+      styles.header,
+    );
     spawnCommands.forEach((cmd, index) => {
-      console.log(`  %c${index + 1}. %c${cmd}`, styles.timingValue, styles.deviceName);
+      console.log(
+        `  %c${index + 1}. %c${cmd}`,
+        styles.timingValue,
+        styles.deviceName,
+      );
     });
   }
 
-  // Run benchmark for each combination of iOS version and device
   try {
     for (const iosVersion of iosVersions) {
       for (const deviceName of deviceNames) {
-        const result = await runBootBenchmark(iosVersion, deviceName, runCount, idleThreshold, spawnCommands, idleTimeout);
+        const result = await runBootBenchmark(
+          iosVersion,
+          deviceName,
+          runCount,
+          idleThreshold,
+          spawnCommands,
+          idleTimeout,
+        );
         if (result) {
           results.push(result);
         }
@@ -67,15 +84,19 @@ export async function benchmarkBootCommand(
     }
   } catch (error) {
     // Only unexpected errors should reach this level
-    console.error(`%cBenchmark process aborted due to unexpected error`, styles.error);
+    console.error(
+      `%cBenchmark process aborted due to unexpected error`,
+      styles.error,
+    );
     console.error(error);
   } finally {
-    // Print summary of the results we got, even if incomplete
     if (results.length > 0) {
-      console.log(`\n%cPrinting summary of ${results.length} completed benchmarks:`, styles.header);
       printBenchmarkSummary(results, deviceNames);
     } else {
-      console.error(`%cNo benchmark results were collected due to errors`, styles.error);
+      console.error(
+        `%cNo benchmark results were collected due to errors`,
+        styles.error,
+      );
     }
   }
 }
