@@ -4,6 +4,8 @@ import {
   measureBootTime,
   shutdownDevice,
   waitForSystemIdle,
+  SoftSimulatorError,
+  HardSimulatorError
 } from "./simctl.ts";
 import { styles } from "./styles.ts";
 
@@ -43,6 +45,7 @@ export async function runBootBenchmark(
     );
     console.log(`========================================`);
 
+    // Get device ID - a SoftSimulatorError here means device/runtime not found
     const deviceId = await getDeviceId(iosVersion, deviceName);
     
     let totalBootTimeMs = 0;
@@ -67,7 +70,6 @@ export async function runBootBenchmark(
         console.log(`%cSystem stabilization wait complete.`, styles.success);
       }
       
-      // Erase device to ensure a clean state
       console.log(`\n--- Boot Test ---`);
       await eraseDevice(deviceId);
 
@@ -93,10 +95,39 @@ export async function runBootBenchmark(
       timeToIdleMs: avgTimeToIdleMs,
     };
   } catch (error: any) {
-    console.error(
-      `%cError benchmarking ${deviceName} (iOS ${iosVersion}): ${error.message}`,
-      styles.error,
-    );
-    return null;
+    if (error instanceof SoftSimulatorError) {
+      // Soft errors (like device not found) are reported but allow other benchmarks to continue
+      console.error(
+        `%cNon-critical error benchmarking ${deviceName} (iOS ${iosVersion}): ${error.message}`,
+        styles.error,
+      );
+      return null; // Return null to skip this benchmark
+    } else if (error instanceof HardSimulatorError) {
+      // Hard errors (like simulator shutdown failure) abort this benchmark but allow others
+      console.error(
+        `%cCritical error benchmarking ${deviceName} (iOS ${iosVersion}): ${error.message}`,
+        styles.error,
+      );
+      
+      // Try to clean up by shutting down the simulator if we have a device ID
+      try {
+          console.log(`%cAttempting to shut down simulator to avoid leaving it running...`, styles.warning);
+          await shutdownDevice("booted");
+      } catch (shutdownError: any) {
+        console.error(
+          `%cFailed to shut down simulator during error recovery: ${shutdownError.message}`,
+          styles.error,
+        );
+      }
+      
+      return null; // Return null to skip this benchmark but continue with others
+    } else {
+      // Other unexpected errors
+      console.error(
+        `%cUnexpected error benchmarking ${deviceName} (iOS ${iosVersion}): ${error.message}`,
+        styles.error,
+      );
+      throw error; // Re-throw unexpected errors to be handled at the command level
+    }
   }
 }

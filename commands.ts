@@ -1,6 +1,10 @@
-import { getAllRuntimes, getCoreSimulatorVersion, getMacOSVersion } from "./simctl.ts";
 import { runBootBenchmark } from "./benchmark.ts";
 import { printBenchmarkSummary } from "./reporting.ts";
+import {
+  getAllRuntimes,
+  getCoreSimulatorVersion,
+  getMacOSVersion
+} from "./simctl.ts";
 import { styles } from "./styles.ts";
 
 /**
@@ -52,15 +56,26 @@ export async function benchmarkBootCommand(
   }
 
   // Run benchmark for each combination of iOS version and device
-  for (const iosVersion of iosVersions) {
-    for (const deviceName of deviceNames) {
-      const result = await runBootBenchmark(iosVersion, deviceName, runCount, idleThreshold, spawnCommands, idleTimeout);
-      if (result) {
-        results.push(result);
+  try {
+    for (const iosVersion of iosVersions) {
+      for (const deviceName of deviceNames) {
+        const result = await runBootBenchmark(iosVersion, deviceName, runCount, idleThreshold, spawnCommands, idleTimeout);
+        if (result) {
+          results.push(result);
+        }
       }
     }
+  } catch (error) {
+    // Only unexpected errors should reach this level
+    console.error(`%cBenchmark process aborted due to unexpected error`, styles.error);
+    console.error(error);
+  } finally {
+    // Print summary of the results we got, even if incomplete
+    if (results.length > 0) {
+      console.log(`\n%cPrinting summary of ${results.length} completed benchmarks:`, styles.header);
+      printBenchmarkSummary(results, deviceNames);
+    } else {
+      console.error(`%cNo benchmark results were collected due to errors`, styles.error);
+    }
   }
-
-  // Print summary of results
-  printBenchmarkSummary(results, deviceNames);
 }

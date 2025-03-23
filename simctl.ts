@@ -1,5 +1,37 @@
 import { styles } from "./styles.ts";
 
+/**
+ * Custom error classes for different types of failures
+ */
+export class SimulatorError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SimulatorError";
+  }
+}
+
+/**
+ * Soft errors that can be reported but don't require aborting the benchmark
+ * Examples: Device/runtime not found, simulator not available
+ */
+export class SoftSimulatorError extends SimulatorError {
+  constructor(message: string) {
+    super(message);
+    this.name = "SoftSimulatorError";
+  }
+}
+
+/**
+ * Hard errors that should abort the benchmark process
+ * Examples: Simulator shutdown fails, system commands fail
+ */
+export class HardSimulatorError extends SimulatorError {
+  constructor(message: string) {
+    super(message);
+    this.name = "HardSimulatorError";
+  }
+}
+
 interface Device {
   name: string;
   udid: string;
@@ -130,7 +162,7 @@ export async function getDeviceId(
   });
 
   if (!matchingRuntime) {
-    throw new Error(
+    throw new SoftSimulatorError(
       `No iOS runtime found matching version "${iosVersion}". Check available runtimes.`,
     );
   }
@@ -168,7 +200,7 @@ export async function getDeviceId(
     }
   }
 
-  throw new Error(
+  throw new SoftSimulatorError(
     `No available device found with name "${deviceName}" for iOS version "${iosVersion}"`,
   );
 }
@@ -180,10 +212,11 @@ export async function eraseDevice(deviceId: string): Promise<void> {
     args: ["simctl", "erase", deviceId],
   });
 
-  const { code } = await command.output();
+  const { code, stderr } = await command.output();
 
   if (code !== 0) {
-    throw new Error(`Failed to erase simulator with ID: ${deviceId}`);
+    const errorMessage = new TextDecoder().decode(stderr);
+    throw new HardSimulatorError(`Failed to erase simulator with ID: ${deviceId}. ${errorMessage}`);
   }
 
   console.log("%cSimulator erased successfully.", styles.success);
@@ -199,10 +232,11 @@ export async function measureBootTime(deviceId: string, commands: string[] | nul
     args: ["simctl", "bootstatus", deviceId, "-b"],
   });
 
-  const { code: bootCode } = await bootCommand.output();
+  const { code: bootCode, stderr } = await bootCommand.output();
 
   if (bootCode !== 0) {
-    throw new Error(`Failed to boot simulator with ID: ${deviceId}`);
+    const errorMessage = new TextDecoder().decode(stderr);
+    throw new HardSimulatorError(`Failed to boot simulator with ID: ${deviceId}. ${errorMessage}`);
   }
   
   // Execute user-specified commands immediately after boot if provided
@@ -211,7 +245,8 @@ export async function measureBootTime(deviceId: string, commands: string[] | nul
     
     for (let i = 0; i < commands.length; i++) {
       console.log(`%cExecuting command ${i + 1} of ${commands.length}:%c`, styles.header, styles.reset);
-      await executeCommand(commands[i]);
+      // Consider all post-boot commands as critical
+      await executeCommand(commands[i], true);
     }
   }
   
@@ -222,10 +257,11 @@ export async function measureBootTime(deviceId: string, commands: string[] | nul
     args: ["simctl", "launch", "booted", "com.apple.Preferences"],
   });
   
-  const { code: launchCode } = await launchCommand.output();
+  const { code: launchCode, stderr: launchStderr } = await launchCommand.output();
   
   if (launchCode !== 0) {
-    throw new Error(`Failed to launch Settings app on booted simulator`);
+    const errorMessage = new TextDecoder().decode(launchStderr);
+    throw new HardSimulatorError(`Failed to launch Settings app on booted simulator. ${errorMessage}`);
   }
 
   const endTime = performance.now();
@@ -237,8 +273,9 @@ export async function measureBootTime(deviceId: string, commands: string[] | nul
 /**
  * Executes a command in the simulator
  * @param command The command to execute in the simulator
+ * @param critical Whether this command is critical and should cause a hard error on failure
  */
-export async function executeCommand(command: string): Promise<void> {
+export async function executeCommand(command: string, critical: boolean = false): Promise<void> {
   console.log(`Executing in simulator: ${command}`);
   
   try {
@@ -247,7 +284,7 @@ export async function executeCommand(command: string): Promise<void> {
       args: ["simctl", "spawn", "booted", ...command.split(' ')],
     });
     
-    const { code, stdout } = await process.output();
+    const { code, stdout, stderr } = await process.output();
     
     if (code === 0) {
       console.log(`%cCommand executed successfully in simulator`, styles.success);
@@ -258,10 +295,28 @@ export async function executeCommand(command: string): Promise<void> {
         console.log(`Command output:\n${output}`);
       }
     } else {
+      const errorOutput = new TextDecoder().decode(stderr).trim();
       console.error(`%cCommand failed in simulator with exit code ${code}`, styles.error);
+      
+      if (critical) {
+        throw new HardSimulatorError(`Critical command failed in simulator: ${command}. Exit code: ${code}. Error: ${errorOutput}`);
+      } else {
+        throw new SoftSimulatorError(`Command failed in simulator: ${command}. Exit code: ${code}. Error: ${errorOutput}`);
+      }
     }
   } catch (error: any) {
+    if (error instanceof SimulatorError) {
+      throw error; // Re-throw simulator errors
+    }
+    
+    // Handle other types of errors
     console.error(`%cError executing command in simulator: ${error.message}`, styles.error);
+    
+    if (critical) {
+      throw new HardSimulatorError(`Critical error executing command in simulator: ${error.message}`);
+    } else {
+      throw new SoftSimulatorError(`Error executing command in simulator: ${error.message}`);
+    }
   }
 }
 
@@ -314,10 +369,12 @@ export async function shutdownDevice(deviceId: string): Promise<void> {
     args: ["simctl", "shutdown", deviceId],
   });
 
-  const { code } = await command.output();
-
+  const { code, stdout, stderr } = await command.output();
+  
   if (code !== 0) {
-    throw new Error(`Failed to shutdown simulator with ID: ${deviceId}`);
+    const combinedOutput = new TextDecoder().decode(stdout) + new TextDecoder().decode(stderr);
+    console.error(`%cError shutting down simulator: ${combinedOutput}`, styles.error);
+    throw new HardSimulatorError(`Failed to shutdown simulator with ID: ${deviceId}. This is a critical error as it may leave the simulator running.`);
   }
 
   console.log("%cSimulator shut down successfully.", styles.success);
