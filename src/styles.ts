@@ -1,14 +1,21 @@
+import { blue, bold, green, magenta, red, yellow } from "@std/fmt/colors";
+
+export function resetColor(text: string): string {
+  return text;
+}
+
+// Export styling functions that can be nested in console.log
 export const styles = {
-  header: "color: blue; font-weight: bold;",
-  success: "color: green;",
-  warning: "color: yellow;",
-  error: "color: #red;",
+  header: (text: string) => bold(blue(text)),
+  success: (text: string) => green(text),
+  warning: (text: string) => yellow(text),
+  error: (text: string) => red(text),
 
-  deviceName: "color: magenta; font-weight: bold;",
-  iosVersion: "color: blue; font-weight: bold;",
+  deviceName: (text: string) => bold(magenta(text)),
+  iosVersion: (text: string) => bold(blue(text)),
 
-  timingValue: "color: red;",
+  timingValue: (text: string) => red(text),
 
-  // Default - no styling, just return to normal
+  // For backward compatibility with code that hasn't been refactored yet
   reset: "",
 };

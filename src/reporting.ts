@@ -16,10 +16,9 @@ export function printBenchmarkSummary(
   }
 
   console.log(`\n============================================`);
-  console.log(`%cSUMMARY OF ALL BENCHMARKS`, styles.header);
+  console.log(styles.header('SUMMARY OF ALL BENCHMARKS'));
   console.log(
-    `%c(Average across ${results[0]?.runs || 1} runs)`,
-    styles.deviceName,
+    styles.deviceName(`(Average across ${results[0]?.runs || 1} runs)`),
   );
   console.log(`============================================`);
 
@@ -30,7 +29,7 @@ export function printBenchmarkSummary(
     // For multiple devices, group by device and show a table for each
     const deviceGroups = groupResultsByDevice(results);
     for (const [deviceName, deviceResults] of deviceGroups) {
-      console.log(`\n%cDevice: ${deviceName}`, styles.deviceName);
+      console.log(`\n${styles.deviceName(`Device: ${deviceName}`)}`);
       printResultTable(deviceResults);
     }
   }

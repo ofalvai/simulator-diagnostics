@@ -82,12 +82,10 @@ export async function getAllRuntimes(): Promise<Runtime[]> {
   );
   cachedRuntimes = iosRuntimes;
 
-  console.log("%cAvailable iOS Runtimes:", styles.header);
+  console.log(styles.header("Available iOS Runtimes:"));
   for (const runtime of iosRuntimes) {
     console.log(
-      `- ${runtime.name} (version: %c${runtime.version}%c)`,
-      styles.iosVersion,
-      styles.reset,
+      `- ${runtime.name} (version: ${styles.iosVersion(runtime.version)})`
     );
   }
 
@@ -193,7 +191,7 @@ export async function eraseDevice(deviceId: string): Promise<void> {
     );
   }
 
-  console.log("%cSimulator erased successfully.", styles.success);
+  console.log(styles.success("Simulator erased successfully."));
 }
 
 export async function measureBootTime(
@@ -226,9 +224,7 @@ export async function measureBootTime(
 
     for (let i = 0; i < commands.length; i++) {
       console.log(
-        `%cExecuting command ${i + 1} of ${commands.length}:%c`,
-        styles.header,
-        styles.reset,
+        styles.header(`Executing command ${i + 1} of ${commands.length}:`)
       );
       // Consider all post-boot commands as critical
       await executeCommand(commands[i], true);
@@ -279,7 +275,7 @@ export async function executeCommand(
     const { code, stdout, stderr } = await process.output();
 
     if (code === 0) {
-      console.log(`%cSuccess`, styles.success);
+      console.log(styles.success(`Success`));
 
       const output = new TextDecoder().decode(stdout).trim();
       if (output) {
@@ -288,8 +284,7 @@ export async function executeCommand(
     } else {
       const errorOutput = new TextDecoder().decode(stderr).trim();
       console.error(
-        `%cCommand failed in simulator with exit code ${code}`,
-        styles.error,
+        styles.error(`Command failed in simulator with exit code ${code}`)
       );
 
       if (critical) {
@@ -309,8 +304,7 @@ export async function executeCommand(
 
     // Handle other types of errors
     console.error(
-      `%cError executing command in simulator: ${error.message}`,
-      styles.error,
+      styles.error(`Error executing command in simulator: ${error.message}`)
     );
 
     if (critical) {
@@ -368,13 +362,11 @@ export async function waitForSystemIdle(
 
   if (isIdle) {
     console.log(
-      `%cSystem idle reached after ${totalIdleWaitTime}s`,
-      styles.success,
+      styles.success(`System idle reached after ${totalIdleWaitTime}s`)
     );
   } else {
     console.log(
-      `%cTimed out waiting for system to become idle after ${idleTimeout}s`,
-      styles.warning,
+      styles.warning(`Timed out waiting for system to become idle after ${idleTimeout}s`)
     );
   }
 
@@ -392,13 +384,12 @@ export async function shutdownDevice(deviceId: string): Promise<void> {
     const combinedOutput = new TextDecoder().decode(stdout) +
       new TextDecoder().decode(stderr);
     console.error(
-      `%cError shutting down simulator: ${combinedOutput}`,
-      styles.error,
+      styles.error(`Error shutting down simulator: ${combinedOutput}`)
     );
     throw new HardSimulatorError(
       `Failed to shutdown simulator with ID: ${deviceId}. This is a critical error as it may leave the simulator running.`,
     );
   }
 
-  console.log("%cSimulator shut down successfully.", styles.success);
+  console.log(styles.success("Simulator shut down successfully."));
 }

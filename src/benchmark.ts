@@ -39,9 +39,7 @@ export async function runBootBenchmark(
   try {
     console.log(`\n========================================`);
     console.log(
-      `BENCHMARK: iOS %c${iosVersion}%c`,
-      styles.iosVersion,
-      styles.reset,
+      `BENCHMARK: iOS ${styles.iosVersion(iosVersion)}`
     );
     console.log(`========================================`);
 
@@ -96,28 +94,24 @@ export async function runBootBenchmark(
     if (error instanceof SoftSimulatorError) {
       // Soft errors (like device not found) are reported but allow other benchmarks to continue
       console.error(
-        `%cNon-critical error benchmarking ${deviceName} (iOS ${iosVersion}): ${error.message}`,
-        styles.error,
+        styles.error(`Non-critical error benchmarking ${deviceName} (iOS ${iosVersion}): ${error.message}`)
       );
       return null; // Return null to skip this benchmark
     } else if (error instanceof HardSimulatorError) {
       // Hard errors (like simulator shutdown failure) abort this benchmark but allow others
       console.error(
-        `%cCritical error benchmarking ${deviceName} (iOS ${iosVersion}): ${error.message}`,
-        styles.error,
+        styles.error(`Critical error benchmarking ${deviceName} (iOS ${iosVersion}): ${error.message}`)
       );
 
       // Try to clean up by shutting down the simulator if we have a device ID
       try {
         console.log(
-          `%cAttempting to shut down simulator to avoid leaving it running...`,
-          styles.warning,
+          styles.warning(`Attempting to shut down simulator to avoid leaving it running...`)
         );
         await shutdownDevice("booted");
       } catch (shutdownError: any) {
         console.error(
-          `%cFailed to shut down simulator during error recovery: ${shutdownError.message}`,
-          styles.error,
+          styles.error(`Failed to shut down simulator during error recovery: ${shutdownError.message}`)
         );
       }
 
@@ -125,8 +119,7 @@ export async function runBootBenchmark(
     } else {
       // Other unexpected errors
       console.error(
-        `%cUnexpected error benchmarking ${deviceName} (iOS ${iosVersion}): ${error.message}`,
-        styles.error,
+        styles.error(`Unexpected error benchmarking ${deviceName} (iOS ${iosVersion}): ${error.message}`)
       );
       throw error; // Re-throw unexpected errors to be handled at the command level
     }

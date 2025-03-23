@@ -27,41 +27,28 @@ export async function benchmarkBootCommand(
   const coreSimulatorVersion = await getCoreSimulatorVersion();
 
   console.log(
-    `%cmacOS version: %c${macOSVersion}`,
-    styles.header,
-    styles.timingValue,
+    `${styles.header('macOS version:')} ${styles.timingValue(macOSVersion)}`
   );
   console.log(
-    `%cCoreSimulator.framework version: %c${coreSimulatorVersion}`,
-    styles.header,
-    styles.timingValue,
+    `${styles.header('CoreSimulator.framework version:')} ${styles.timingValue(coreSimulatorVersion)}`
   );
 
   console.log("Gathering information about available iOS runtimes...");
   await getAllRuntimes();
 
   console.log(
-    `\nStarting benchmarks for %c${iosVersions.length}%c iOS version(s) and %c${deviceNames.length}%c device(s) with %c${runCount}%c run(s)...`,
-    styles.timingValue,
-    styles.reset,
-    styles.timingValue,
-    styles.reset,
-    styles.timingValue,
-    styles.reset,
+    `\nStarting benchmarks for ${styles.timingValue(iosVersions.length.toString())} iOS version(s) and ${styles.timingValue(deviceNames.length.toString())} device(s) with ${styles.timingValue(runCount.toString())} run(s)...`
   );
 
   const results = [];
 
   if (spawnCommands && spawnCommands.length > 0) {
     console.log(
-      `%cCommands to execute in simulator after boot:`,
-      styles.header,
+      styles.header(`Commands to execute in simulator after boot:`)
     );
     spawnCommands.forEach((cmd, index) => {
       console.log(
-        `  %c${index + 1}. %c${cmd}`,
-        styles.timingValue,
-        styles.deviceName,
+        `  ${styles.timingValue((index + 1).toString())}. ${styles.deviceName(cmd)}`
       );
     });
   }
@@ -85,8 +72,7 @@ export async function benchmarkBootCommand(
   } catch (error) {
     // Only unexpected errors should reach this level
     console.error(
-      `%cBenchmark process aborted due to unexpected error`,
-      styles.error,
+      styles.error(`Benchmark process aborted due to unexpected error`)
     );
     console.error(error);
   } finally {
@@ -94,8 +80,7 @@ export async function benchmarkBootCommand(
       printBenchmarkSummary(results, deviceNames);
     } else {
       console.error(
-        `%cNo benchmark results were collected due to errors`,
-        styles.error,
+        styles.error(`No benchmark results were collected due to errors`)
       );
     }
   }
