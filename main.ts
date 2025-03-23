@@ -32,7 +32,14 @@ async function main() {
   // Process commands
   switch (command) {
     case "benchmark-boot": {
-      const { ios, device, runs, "idle-threshold": idleThreshold, "spawn-after-boot": spawnCommands } = flags;
+      const { 
+        ios, 
+        device, 
+        runs, 
+        "idle-threshold": idleThreshold, 
+        "idle-timeout": idleTimeout, 
+        "spawn-after-boot": spawnCommands 
+      } = flags;
 
       // Convert to arrays, handling both single and multiple values
       const iosVersions = ios ? (Array.isArray(ios) ? ios : [ios]) : [];
@@ -46,13 +53,16 @@ async function main() {
       // Default idle threshold to 2.0 if not specified
       const idleThresholdValue = typeof idleThreshold === 'string' ? parseFloat(idleThreshold) : 2.0;
       
+      // Default idle timeout to 300 seconds if not specified  
+      const idleTimeoutValue = typeof idleTimeout === 'string' ? parseInt(idleTimeout) : 300;
+      
       // Commands to spawn after boot (optional)
       // Convert to array, handling both single and multiple values
       const commandsToSpawn = spawnCommands 
         ? (Array.isArray(spawnCommands) ? spawnCommands : [spawnCommands]) 
         : null;
 
-      await benchmarkBootCommand(iosVersions, deviceNames, runCount, idleThresholdValue, commandsToSpawn);
+      await benchmarkBootCommand(iosVersions, deviceNames, runCount, idleThresholdValue, commandsToSpawn, idleTimeoutValue);
       break;
     }
     default: {
@@ -90,7 +100,7 @@ function printUsage(): void {
   );
   console.error("\nExample:");
   console.error(
-    '  deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14" --runs 3 --idle-threshold 1.0 --spawn-after-boot "launchctl bootout system/com.apple.diagnosticd"',
+    '  deno run main.ts benchmark-boot --ios 16.4 --ios 17.0 --device "iPhone 15" --device "iPhone 14" --runs 3 --idle-threshold 1.0 --idle-timeout 180 --spawn-after-boot "launchctl bootout system/com.apple.diagnosticd"',
   );
   console.error("\nDiagnostic Information:");
   console.error("  • Shows CoreSimulator framework version");

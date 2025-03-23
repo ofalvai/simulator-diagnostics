@@ -11,7 +11,8 @@ export async function benchmarkBootCommand(
   deviceNames: string[],
   runCount: number = 1,
   idleThreshold: number = 2.0,
-  spawnCommands: string[] | null = null
+  spawnCommands: string[] | null = null,
+  idleTimeout: number = 300
 ): Promise<void> {
   if (iosVersions.length === 0 || deviceNames.length === 0) {
     console.error("Please provide both --ios and --device flags");
@@ -53,7 +54,7 @@ export async function benchmarkBootCommand(
   // Run benchmark for each combination of iOS version and device
   for (const iosVersion of iosVersions) {
     for (const deviceName of deviceNames) {
-      const result = await runBootBenchmark(iosVersion, deviceName, runCount, idleThreshold, spawnCommands);
+      const result = await runBootBenchmark(iosVersion, deviceName, runCount, idleThreshold, spawnCommands, idleTimeout);
       if (result) {
         results.push(result);
       }

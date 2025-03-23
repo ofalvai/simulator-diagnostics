@@ -268,19 +268,26 @@ export async function executeCommand(command: string): Promise<void> {
 /**
  * Waits for the system to become idle by monitoring the load average
  * @param idleThreshold The load average threshold to consider the system idle
+ * @param idleTimeout Maximum seconds to wait for system to become idle
  * @returns The time in milliseconds that it took for the system to become idle
  */
-export async function waitForSystemIdle(idleThreshold: number): Promise<number> {
+export async function waitForSystemIdle(idleThreshold: number, idleTimeout: number = 300): Promise<number> {
   
   console.log(`Waiting for system to idle...`);
   const startTime = performance.now();
   let isIdle = false;
   
+  // Calculate timeout end time
+  const timeoutTime = startTime + (idleTimeout * 1000);
+  
   // Poll every few seconds
-  while (!isIdle) {
+  while (!isIdle && performance.now() < timeoutTime) {
+    const currentTime = performance.now();
+    const elapsedSeconds = Math.round((currentTime - startTime) / 1000);
+    
     const loadAvg = Deno.loadavg();
     const oneMinuteLoad = loadAvg[0];
-    console.log(`1m load: ${oneMinuteLoad.toFixed(2)} (threshold: ${idleThreshold})...`);
+    console.log(`[${elapsedSeconds}s] 1m load: ${oneMinuteLoad.toFixed(2)} (threshold: ${idleThreshold})...`);
     
     if (oneMinuteLoad < idleThreshold) {
       isIdle = true;
@@ -292,7 +299,12 @@ export async function waitForSystemIdle(idleThreshold: number): Promise<number> 
   
   const endTime = performance.now();
   const totalIdleWaitTime = Math.round((endTime - startTime) / 1000);
-  console.log(`%cSystem idle reached after ${totalIdleWaitTime}s`, styles.success);
+  
+  if (isIdle) {
+    console.log(`%cSystem idle reached after ${totalIdleWaitTime}s`, styles.success);
+  } else {
+    console.log(`%cTimed out waiting for system to become idle after ${idleTimeout}s`, styles.warning);
+  }
   
   return endTime - startTime;
 }

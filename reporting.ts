@@ -39,8 +39,7 @@ export function printBenchmarkSummary(
 function printResultTable(results: BenchmarkResult[]): void {
   const tableData = results.map(result => ({
     "iOS Version": result.iosVersion,
-    "Cold Boot (sec)": (result.coldBootTimeMs / 1000).toFixed(1),
-    "Warm Boot (sec)": (result.warmBootTimeMs / 1000).toFixed(1),
+    "Boot Time (sec)": (result.bootTimeMs / 1000).toFixed(1),
     "Time to Idle (sec)": result.timeToIdleMs ? (result.timeToIdleMs / 1000).toFixed(1) : "N/A"
   }));
   

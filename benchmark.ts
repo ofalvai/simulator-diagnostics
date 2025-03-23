@@ -10,22 +10,29 @@ import { styles } from "./styles.ts";
 export interface BenchmarkResult {
   iosVersion: string;
   deviceName: string;
-  coldBootTimeMs: number;
-  warmBootTimeMs: number;
+  bootTimeMs: number;
   runs: number;
-  timeToIdleMs?: number; // Time until system becomes idle after cold boot
+  timeToIdleMs?: number; // Time until system becomes idle after boot
 }
 
 /**
  * Benchmarks the boot time of a specific iOS simulator
- * Measures both cold and warm boot times, and time to system idle for cold boots
+ * Measures boot time and time to system idle
+ * 
+ * @param iosVersion The iOS version to benchmark
+ * @param deviceName The device name to benchmark
+ * @param runCount Number of times to repeat benchmarks
+ * @param idleThreshold Load average threshold to consider system idle
+ * @param spawnCommands Commands to execute in simulator after boot
+ * @param idleTimeout Maximum seconds to wait for system to become idle
  */
 export async function runBootBenchmark(
   iosVersion: string,
   deviceName: string,
   runCount: number = 1,
   idleThreshold: number = 2.0,
-  spawnCommands: string[] | null = null
+  spawnCommands: string[] | null = null,
+  idleTimeout: number = 300
 ): Promise<BenchmarkResult | null> {
   try {
     console.log(`\n========================================`);
@@ -38,8 +45,7 @@ export async function runBootBenchmark(
 
     const deviceId = await getDeviceId(iosVersion, deviceName);
     
-    let totalColdBootTimeMs = 0;
-    let totalWarmBootTimeMs = 0;
+    let totalBootTimeMs = 0;
     let totalTimeToIdleMs = 0;
     
     for (let i = 0; i < runCount; i++) {
@@ -61,38 +67,28 @@ export async function runBootBenchmark(
         console.log(`%cSystem stabilization wait complete.`, styles.success);
       }
       
-      // COLD BOOT: Erase device to ensure a cold boot
-      console.log(`\n--- Cold Boot Test ---`);
+      // Erase device to ensure a clean state
+      console.log(`\n--- Boot Test ---`);
       await eraseDevice(deviceId);
 
-      const coldBootTime = await measureBootTime(deviceId, spawnCommands);
-      totalColdBootTimeMs += coldBootTime;
+      const bootTime = await measureBootTime(deviceId, spawnCommands);
+      totalBootTimeMs += bootTime;
 
-      const timeToIdle = await waitForSystemIdle(idleThreshold);
-      totalTimeToIdleMs += coldBootTime + timeToIdle;
+      const timeToIdle = await waitForSystemIdle(idleThreshold, idleTimeout);
+      totalTimeToIdleMs += bootTime + timeToIdle;
       
-      // Shut down the simulator after measurement
-      await shutdownDevice(deviceId);
-
-      // WARM BOOT: Boot again without erasing for warm boot measurement
-      console.log(`\n--- Warm Boot Test ---`);
-      const warmBootTime = await measureBootTime(deviceId, spawnCommands);
-      totalWarmBootTimeMs += warmBootTime;
-
       // Shut down the simulator after measurement
       await shutdownDevice(deviceId);
     }
     
     // Calculate average times
-    const avgColdBootTimeMs = totalColdBootTimeMs / runCount;
-    const avgWarmBootTimeMs = totalWarmBootTimeMs / runCount;
+    const avgBootTimeMs = totalBootTimeMs / runCount;
     const avgTimeToIdleMs = totalTimeToIdleMs / runCount;
 
     return {
       iosVersion,
       deviceName,
-      coldBootTimeMs: avgColdBootTimeMs,
-      warmBootTimeMs: avgWarmBootTimeMs,
+      bootTimeMs: avgBootTimeMs,
       runs: runCount,
       timeToIdleMs: avgTimeToIdleMs,
     };
