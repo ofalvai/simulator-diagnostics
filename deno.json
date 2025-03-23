@@ -7,5 +7,10 @@
     "@std/cli": "jsr:@std/cli@^1.0.14",
     "@std/fmt": "jsr:@std/fmt@^1.0.0",
     "@cliffy/command": "jsr:@cliffy/command@1"
+  },
+  "lint": {
+    "rules": {
+      "exclude": ["no-explicit-any"]
+    }
   }
 }

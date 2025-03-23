@@ -252,7 +252,7 @@ export async function measureBootTime(
 
   const endTime = performance.now();
   const totalTime = Math.round((endTime - startTime) / 1000);
-  console.log(`Full boot + app launch time: ${totalTime}s`);
+  console.log(styles.success(`Full boot + app launch time: ${totalTime}s`));
   return endTime - startTime;
 }
 

@@ -67,21 +67,3 @@ function groupResultsByDevice(
 
   return deviceGroups;
 }
-
-/**
- * Groups benchmark results by iOS version
- */
-function groupResultsByIosVersion(
-  results: BenchmarkResult[],
-): Map<string, BenchmarkResult[]> {
-  const iosGroups = new Map<string, BenchmarkResult[]>();
-
-  for (const result of results) {
-    if (!iosGroups.has(result.iosVersion)) {
-      iosGroups.set(result.iosVersion, []);
-    }
-    iosGroups.get(result.iosVersion)?.push(result);
-  }
-
-  return iosGroups;
-}
