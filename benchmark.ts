@@ -48,7 +48,6 @@ export async function runBootBenchmark(
       // Wait for system to stabilize before starting the benchmark
       if (i > 0) { // Skip first run since system is likely already stable
         console.log(`\nWaiting 60 seconds for system load to stabilize...`);
-        const startWait = performance.now();
         let waitSecs = 0;
         
         // Show progress every 10 seconds
@@ -66,10 +65,10 @@ export async function runBootBenchmark(
       console.log(`\n--- Cold Boot Test ---`);
       await eraseDevice(deviceId);
 
-      const coldBootTime = await measureBootTime(deviceId);
+      const coldBootTime = await measureBootTime(deviceId, spawnCommands);
       totalColdBootTimeMs += coldBootTime;
 
-      const timeToIdle = await waitForSystemIdle(idleThreshold, spawnCommands);
+      const timeToIdle = await waitForSystemIdle(idleThreshold);
       totalTimeToIdleMs += coldBootTime + timeToIdle;
       
       // Shut down the simulator after measurement
@@ -77,7 +76,7 @@ export async function runBootBenchmark(
 
       // WARM BOOT: Boot again without erasing for warm boot measurement
       console.log(`\n--- Warm Boot Test ---`);
-      const warmBootTime = await measureBootTime(deviceId);
+      const warmBootTime = await measureBootTime(deviceId, spawnCommands);
       totalWarmBootTimeMs += warmBootTime;
 
       // Shut down the simulator after measurement

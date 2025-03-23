@@ -86,7 +86,7 @@ function printUsage(): void {
     "  --idle-threshold <name>  Load average threshold to consider system idle (default: 2.0)",
   );
   console.error(
-    '  --spawn-after-boot "cmd"  Command to execute in the simulator after boot (can be specified multiple times)',
+    '  --spawn-after-boot "cmd"  Command to execute in the simulator immediately after boot (can be specified multiple times)',
   );
   console.error("\nExample:");
   console.error(

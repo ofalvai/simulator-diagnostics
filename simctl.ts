@@ -189,7 +189,7 @@ export async function eraseDevice(deviceId: string): Promise<void> {
   console.log("%cSimulator erased successfully.", styles.success);
 }
 
-export async function measureBootTime(deviceId: string): Promise<number> {
+export async function measureBootTime(deviceId: string, commands: string[] | null = null): Promise<number> {
   console.log(`Booting simulator with ID: ${deviceId}`);
 
   const startTime = performance.now();
@@ -203,6 +203,16 @@ export async function measureBootTime(deviceId: string): Promise<number> {
 
   if (bootCode !== 0) {
     throw new Error(`Failed to boot simulator with ID: ${deviceId}`);
+  }
+  
+  // Execute user-specified commands immediately after boot if provided
+  if (commands && commands.length > 0) {
+    console.log(`Executing ${commands.length} post-boot command(s) in simulator...`);
+    
+    for (let i = 0; i < commands.length; i++) {
+      console.log(`%cExecuting command ${i + 1} of ${commands.length}:%c`, styles.header, styles.reset);
+      await executeCommand(commands[i]);
+    }
   }
   
   console.log(`Basic boot completed. Launching Settings app to verify full usability...`);
@@ -250,7 +260,7 @@ export async function executeCommand(command: string): Promise<void> {
     } else {
       console.error(`%cCommand failed in simulator with exit code ${code}`, styles.error);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error(`%cError executing command in simulator: ${error.message}`, styles.error);
   }
 }
@@ -258,19 +268,9 @@ export async function executeCommand(command: string): Promise<void> {
 /**
  * Waits for the system to become idle by monitoring the load average
  * @param idleThreshold The load average threshold to consider the system idle
- * @param commands Optional array of commands to run serially before waiting for idle
  * @returns The time in milliseconds that it took for the system to become idle
  */
-export async function waitForSystemIdle(idleThreshold: number, commands: string[] | null = null): Promise<number> {
-  // If commands were provided, execute them serially
-  if (commands && commands.length > 0) {
-    console.log(`Executing ${commands.length} command(s) in simulator in sequence...`);
-    
-    for (let i = 0; i < commands.length; i++) {
-      console.log(`%cExecuting command ${i + 1} of ${commands.length}:%c`, styles.header, styles.reset);
-      await executeCommand(commands[i]);
-    }
-  }
+export async function waitForSystemIdle(idleThreshold: number): Promise<number> {
   
   console.log(`Waiting for system to idle...`);
   const startTime = performance.now();
