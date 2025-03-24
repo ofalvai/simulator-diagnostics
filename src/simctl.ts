@@ -349,7 +349,7 @@ export async function waitForSystemIdle(
 
     // If load average is below threshold and we've waited at least 10 seconds, consider system idle
     // The latter is needed because load average is a lagging metric and it might not reach its peak immediately.
-    if (oneMinuteLoad < idleThreshold && elapsedSeconds > 20) {
+    if (oneMinuteLoad < idleThreshold && elapsedSeconds > 10) {
       isIdle = true;
     } else {
       await new Promise((resolve) => setTimeout(resolve, 3000));
