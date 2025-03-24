@@ -333,10 +333,8 @@ export async function waitForSystemIdle(
   const startTime = performance.now();
   let isIdle = false;
 
-  // Calculate timeout end time
   const timeoutTime = startTime + (idleTimeout * 1000);
 
-  // Poll every few seconds
   while (!isIdle && performance.now() < timeoutTime) {
     const currentTime = performance.now();
     const elapsedSeconds = Math.round((currentTime - startTime) / 1000);
@@ -349,10 +347,11 @@ export async function waitForSystemIdle(
       } (threshold: ${idleThreshold})...`,
     );
 
-    if (oneMinuteLoad < idleThreshold) {
+    // If load average is below threshold and we've waited at least 10 seconds, consider system idle
+    // The latter is needed because load average is a lagging metric and it might not reach its peak immediately.
+    if (oneMinuteLoad < idleThreshold && elapsedSeconds > 20) {
       isIdle = true;
     } else {
-      // Wait before checking again
       await new Promise((resolve) => setTimeout(resolve, 3000));
     }
   }
